@@ -1,15 +1,16 @@
 name: Auto Assign to Project(s)
 
 on:
-  workflow_call:
+  issues:
+    types:
+      - opened
 
 jobs:
   assign-zmodules-project:
-    if: ${{ github.event_name == 'issues' && github.event.action == 'opened' }}
     name: Assign issue to ZModules project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@v0.5.0
+      - uses: actions/add-to-project@v1.0.1
         with:
           project-url: https://github.com/orgs/minvws/projects/57
-          github-token: ${{ secrets.PAT_VLA_PROJECT }}
+          github-token: ${{ secrets.PAT_PROJECT_ASSIGN  }}
