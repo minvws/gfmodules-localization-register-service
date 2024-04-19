@@ -1,6 +1,6 @@
 from enum import Enum
 import configparser
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, ValidationError
 from pydantic import Field
@@ -25,6 +25,42 @@ class ConfigDatabase(BaseModel):
     dsn: str
 
 
+class ConfigPseudonymApi(BaseModel):
+    endpoint: str
+    provider_id: str
+    timeout: int = Field(default=30, gt=0)
+    mtls_cert: Optional[str] = None
+    mtls_key: Optional[str] = None
+    mtls_ca: Optional[str] = None
+
+
+class ConfigLocalisationApi(BaseModel):
+    endpoint: str
+    provider_id: str
+    timeout: int = Field(default=30, gt=0)
+    mtls_cert: Optional[str] = None
+    mtls_key: Optional[str] = None
+    mtls_ca: Optional[str] = None
+
+
+class ConfigAddressingApi(BaseModel):
+    endpoint: str
+    provider_id: str
+    timeout: int = Field(default=30, gt=0)
+    mtls_cert: Optional[str] = None
+    mtls_key: Optional[str] = None
+    mtls_ca: Optional[str] = None
+
+
+class ConfigMetadataApi(BaseModel):
+    endpoint: str
+    provider_id: str
+    timeout: int = Field(default=30, gt=0)
+    mtls_cert: Optional[str] = None
+    mtls_key: Optional[str] = None
+    mtls_ca: Optional[str] = None
+
+
 class ConfigUvicorn(BaseModel):
     swagger_enabled: bool = Field(default=False)
     docs_url: str = Field(default="/docs")
@@ -38,16 +74,14 @@ class ConfigUvicorn(BaseModel):
     ssl_key_file: str | None
 
 
-class ConfigExample(BaseModel):
-    argument1: str = Field(default="default")
-    argument2: bool = Field(default=False)
-
-
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
     uvicorn: ConfigUvicorn
-    example: ConfigExample
+    pseudonym_api: ConfigPseudonymApi
+    localisation_api: ConfigLocalisationApi
+    addressing_api: ConfigAddressingApi
+    metadata_api: ConfigMetadataApi
 
 
 def read_ini_file(path: str) -> Any:

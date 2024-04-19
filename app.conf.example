@@ -6,9 +6,37 @@ loglevel=debug
 # Dsn for database connection
 dsn=postgresql+psycopg://postgres:postgres@localhost:5432/postgres
 
-[example]
-argument1: "foobar"
-argument2: true
+[pseudonym_api]
+endpoint=http://localhost:8504
+provider_id=4c63e018-e6cf-45e0-a0d0-540e72d91f08
+timeout=10
+# mtls_cert=secrets/ssl/pseudonym_api.cert
+# mtls_key=secrets/ssl/pseudonym_api.key
+# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
+
+[localisation_api]
+endpoint=http://localhost:8504
+provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
+timeout=10
+# mtls_cert=secrets/ssl/localisation_api.cert
+# mtls_key=secrets/ssl/localisation_api.key
+# mtls_ca=secrets/ssl/localisation_api_ca.cert
+
+[addressing_api]
+endpoint=http://localhost:8504
+provider_id=a98b9ca8-5b92-4292-b077-f9360e7be6b9
+timeout=10
+# mtls_cert=secrets/ssl/addressing_api.cert
+# mtls_key=secrets/ssl/addressing_api.key
+# mtls_ca=secrets/ssl/addressing_api_ca.cert
+
+[metadata_api]
+endpoint=http://localhost:8504
+provider_id=d058e1e8-e4a2-4918-9ded-19dfb81fdc4f
+timeout=10
+# mtls_cert=secrets/ssl/metadata_api.cert
+# mtls_key=secrets/ssl/metadata_api.key
+# mtls_ca=secrets/ssl/metadata_api_ca.cert
 
 [uvicorn]
 # If true, the api docs will be enabled
