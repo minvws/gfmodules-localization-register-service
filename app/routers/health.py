@@ -1,10 +1,7 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends
-
-import container
-from db.db import Database
+from fastapi import APIRouter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,12 +12,8 @@ def ok_or_error(value: bool) -> str:
 
 
 @router.get("/health")
-def health(db: Database = Depends(container.get_database)) -> dict[str, Any]:
-    logger.info("Checking database health")
-
-    components = {
-        'database': ok_or_error(db.is_healthy()),
-    }
+def health() -> dict[str, Any]:
+    components: dict[str, str] = {}
     healthy = ok_or_error(all(value == "ok" for value in components.values()))
 
     return {
