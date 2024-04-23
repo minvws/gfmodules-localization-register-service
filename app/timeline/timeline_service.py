@@ -63,8 +63,9 @@ class TimelineService:
             timeline.append(TimelineEntry(
                 healthcare_provider_name=provider.name,
                 healthcare_provider_medmij_id=provider.medmij_id,
-                error=False if entry is None else True,
-                error_msg=None if entry is not None else "Failed to fetch metadata"
+                error=True if entry is None else False,
+                error_msg="Failed to fetch metadata" if entry is None else None,
+                entry=entry
             ))
 
         return timeline
