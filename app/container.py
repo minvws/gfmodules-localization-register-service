@@ -42,7 +42,7 @@ def container_config(binder: inject.Binder) -> None:
         mtls_cert=cfg.mtls_cert,
         mtls_key=cfg.mtls_key,
         mtls_ca=cfg.mtls_ca,
-        metadata_endpoint=cfg.metadata_api.endpoint
+        metadata_endpoint=config.metadata_api.endpoint
     )
 
     cfg = config.metadata_api
