@@ -12,12 +12,13 @@ class AddressingError(Exception):
 
 
 class AddressingApi:
-    def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
+    def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str, metadata_endpoint: str):
         self.endpoint = endpoint
         self.timeout = timeout
         self.mtls_cert = mtls_cert
         self.mtls_key = mtls_key
         self.mtls_ca = mtls_ca
+        self.metadata_endpoint = metadata_endpoint
 
     def get_addressing(self, provider_medmij_id: str, data_domain: DataDomain) -> Address:
         logger.info(f"Fetching addressing for provider {provider_medmij_id}")
@@ -29,5 +30,5 @@ class AddressingApi:
         return Address(
             # Needed in order to convert the pseudonym
             provider_id=uuid.uuid4(),
-            metadata_endpoint=f"{self.endpoint}/drs/{provider_medmij_id}/{data_domain.value}",
+            metadata_endpoint=f"{self.metadata_endpoint}/drs/{provider_medmij_id}/{data_domain.value}",
         )
