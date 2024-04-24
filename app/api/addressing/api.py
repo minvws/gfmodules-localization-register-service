@@ -29,6 +29,6 @@ class AddressingApi:
 
         return Address(
             # Needed in order to convert the pseudonym
-            provider_id=uuid.uuid4(),
+            provider_id=uuid.uuid5(uuid.NAMESPACE_DNS, provider_medmij_id),
             metadata_endpoint=f"{self.metadata_endpoint}/drs/{provider_medmij_id}/{data_domain.value}",
         )
