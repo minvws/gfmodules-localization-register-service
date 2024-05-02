@@ -21,6 +21,11 @@ sqlalchemy = "^2.0.25"
 psycopg = { extras = ["binary", "pool"], version = "^3.1.17" }
 requests = "^2.31.0"
 types-requests = "^2.31.0.20240406"
+opentelemetry-sdk = "^1.24.0"
+opentelemetry-exporter-otlp-proto-grpc = "^1.24.0"
+opentelemetry-instrumentation = "^0.45b0"
+opentelemetry-instrumentation-fastapi = "^0.45b0"
+opentelemetry-instrumentation-requests = "^0.45b0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
