@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 class PseudonymError(Exception):
     pass
 
+
 class PseudonymApi:
     def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
         self.endpoint = endpoint

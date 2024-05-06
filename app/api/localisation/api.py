@@ -25,6 +25,7 @@ class LocalisationApi:
     def get_providers(self, pseudonym: Pseudonym, data_domain: DataDomain) -> List[LocalisationEntry]:
         try:
             logger.info(f"Fetching localisation for pseudonym {pseudonym} and data domain {data_domain}")
+
             req = requests.post(
                 f"{self.endpoint}/info",
                 json={
