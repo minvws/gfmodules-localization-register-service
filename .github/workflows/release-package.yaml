@@ -18,7 +18,7 @@ jobs:
         run: 'echo "{ \"version\": \"${{ env.RELEASE_VERSION }}\", \"git_ref\": \"$GITHUB_SHA\"}" > version.json'
 
       - name: Create tar
-        run: tar -czf nl-irealisatie-zmodules-addressing-register_${{ env.RELEASE_VERSION }}.tar.gz app docs tools ./version.json
+        run: tar -czf nl-irealisatie-zmodules-timeline-service_${{ env.RELEASE_VERSION }}.tar.gz app docs tools ./version.json
 
       - name: Upload release tar
         uses: actions/upload-artifact@v4
