@@ -4,6 +4,7 @@ CREATE TABLE examples (
       PRIMARY KEY (id)
 );
 
+ALTER TABLE examples OWNER TO timeline;
 
 INSERT INTO public.examples(id, name) VALUES(DEFAULT, 'foo');
 INSERT INTO public.examples(id, name) VALUES(DEFAULT, 'bar');
