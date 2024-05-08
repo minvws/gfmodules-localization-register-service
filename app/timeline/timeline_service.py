@@ -37,13 +37,12 @@ class TimelineService:
         # Exchange pseudonyms for localisation and addressing
         config = get_config()
 
-        logger.info(f"Exchanging pseudonym {pseudonym} for localisation and addressing")
+        logger.info(f"Exchanging pseudonym {pseudonym} for localisation")
         try:
             localisation_pseudonym = self.pseudonym_api.exchange(pseudonym, config.localisation_api.provider_id)
-            addressing_pseudonym = self.pseudonym_api.exchange(pseudonym, config.addressing_api.provider_id)
         except PseudonymError as e:
-            logger.error(f"Failed to exchange pseudonyms: {e}")
-            raise TimelineError(f"Failed to exchange pseudonyms: {e}")
+            logger.error(f"Failed to exchange pseudonym: {e}")
+            raise TimelineError(f"Failed to exchange pseudonym: {e}")
 
         # Find providers in localisation service and iterate each one
         logger.info(f"Fetching providers for localisation {localisation_pseudonym} and data domain {data_domain}")
@@ -56,7 +55,7 @@ class TimelineService:
         for provider in providers:
             # @TODO: make this async and collect at the end
             logger.info(f"Fetching metadata from provider {provider.name}")
-            entry = self.fetch_metadata_from_provider(addressing_pseudonym, provider, data_domain)
+            entry = self.fetch_metadata_from_provider(pseudonym, provider, data_domain)
             if entry is None:
                 logger.warning(f"Failed to fetch metadata from provider {provider.name}")
 
@@ -70,7 +69,7 @@ class TimelineService:
 
         return timeline
 
-    def fetch_metadata_from_provider(self, addressing_pseudonym: Pseudonym, provider: LocalisationEntry, data_domain: DataDomain) -> dict[str,Metadata]|None:
+    def fetch_metadata_from_provider(self, pseudonym: Pseudonym, provider: LocalisationEntry, data_domain: DataDomain) -> dict[str,Metadata]|None:
         """
         Fetch healthcare metadata from a provider
         """
@@ -83,7 +82,7 @@ class TimelineService:
             return None
 
         # Fetch metadata at the found provider address
-        metadata_pseudonym = self.pseudonym_api.exchange(addressing_pseudonym, str(address.provider_id))
+        metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
         metadata = self.metadata_api.get_metadata(
             metadata_pseudonym,
             metadata_endpoint=address.metadata_endpoint,
