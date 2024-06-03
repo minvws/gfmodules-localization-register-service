@@ -4,8 +4,10 @@ from typing import Any
 
 from fastapi import FastAPI
 import uvicorn
+from starlette.responses import JSONResponse
 
 from app.telemetry import setup_telemetry
+from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 from routers.default import router as default_router
 from routers.health import router as health_router
 from routers.timeline import router as timeline_router
@@ -76,4 +78,23 @@ def setup_fastapi() -> FastAPI:
     for router in routers:
         fastapi.include_router(router)
 
+    fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
     return fastapi
+
+
+def default_fhir_exception_handler(request, exc):
+    """
+    Default handler to convert generic exceptions to FHIR exceptions
+    """
+    outcome = OperationOutcome(issue=[
+        OperationOutcomeIssue(
+            severity="error",
+            code="exception",
+            details=OperationOutcomeDetail(text=f"{exc}")
+        )
+    ])
+
+    return JSONResponse(
+        status_code=500,
+        content=outcome.model_dump()
+    )

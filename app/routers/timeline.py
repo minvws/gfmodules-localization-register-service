@@ -1,17 +1,15 @@
 import logging
-import uuid
-from datetime import datetime
-from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from opentelemetry import trace
 
 from pydantic import BaseModel
+from starlette.responses import Response
 
 from app import container
 from app.data import str_to_pseudonym, DataDomain
 from app.telemetry import get_tracer
-from app.timeline.models import TimelineEntry
+from app.timeline.fhir import timeline_to_fhir, FHIRException
 from app.timeline.timeline_service import TimelineService, TimelineError
 
 logger = logging.getLogger(__name__)
@@ -26,14 +24,14 @@ class TimelineRequest(BaseModel):
     data_domain: str
 
 
-class TimelineResponse(BaseModel):
-    """
-    Response model for timeline
-    """
-    id: uuid.UUID
-    creation_date: datetime
-    pseudonym: str
-    timeline: List[TimelineEntry]
+# class TimelineResponse(BaseModel):
+#     """
+#     Response model for timeline
+#     """
+#     id: uuid.UUID
+#     creation_date: datetime
+#     pseudonym: str
+#     timeline: List[TimelineEntry]
 
 
 @router.post("/timeline",
@@ -43,7 +41,7 @@ class TimelineResponse(BaseModel):
 def post_timeline(
     req: TimelineRequest,
     timeline_service: TimelineService = Depends(container.get_timeline_service)
-) -> TimelineResponse:
+) -> Response:
 
     span = trace.get_current_span()
     span.set_attribute("data.pseudonym", req.pseudonym)
@@ -51,22 +49,20 @@ def post_timeline(
 
     pseudonym = str_to_pseudonym(req.pseudonym)
     if pseudonym is None:
-        raise HTTPException(status_code=400, detail="Invalid pseudonym")
+        raise FHIRException(status_code=400, severity="error", code="invalid", msg="Invalid pseudonym")
 
     data_domain = DataDomain.from_str(req.data_domain)
     if data_domain is None:
-        raise HTTPException(status_code=400, detail="Invalid data domain")
+        raise FHIRException(status_code=400, severity="error", code="invalid", msg="Invalid data domain")
 
     try:
         with get_tracer().start_as_current_span("retrieve_timeline") as tl_span:
             timeline = timeline_service.retrieve(pseudonym, data_domain)
             tl_span.add_event("timeline_retrieved")
     except TimelineError as e:
-        raise HTTPException(status_code=400, detail=e)
+        raise FHIRException(status_code=400, severity="error", code="invalid", msg=e.message)
 
-    return TimelineResponse(
-        id=uuid.uuid4(),
-        creation_date=datetime.now(),
-        pseudonym=req.pseudonym,
-        timeline=timeline
+    return Response(
+        content=timeline_to_fhir(timeline).json(indent=2),
+        status_code=200,
     )

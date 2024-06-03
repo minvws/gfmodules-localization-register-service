@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class TimelineError(Exception):
-    pass
+    def __init__(self, message: str) -> None:
+        self.message = message
 
 
 class TimelineService:
@@ -55,16 +56,16 @@ class TimelineService:
         for provider in providers:
             # @TODO: make this async and collect at the end
             logger.info(f"Fetching metadata from provider {provider.name}")
-            entry = self.fetch_metadata_from_provider(pseudonym, provider, data_domain)
-            if entry is None:
+            items = self.fetch_metadata_from_provider(pseudonym, provider, data_domain)
+            if items is None:
                 logger.warning(f"Failed to fetch metadata from provider {provider.name}")
 
             timeline.append(TimelineEntry(
                 healthcare_provider_name=provider.name,
                 healthcare_provider_medmij_id=provider.medmij_id,
-                error=True if entry is None else False,
-                error_msg="Failed to fetch metadata" if entry is None else None,
-                entry=entry
+                error=True if items is None else False,
+                error_msg="Failed to fetch metadata" if items is None else None,
+                items=items,
             ))
 
         return timeline
