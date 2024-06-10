@@ -1,15 +1,15 @@
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from opentelemetry import trace
 
 from pydantic import BaseModel
-from starlette.responses import Response
 
 from app import container
 from app.data import str_to_pseudonym, DataDomain
 from app.telemetry import get_tracer
-from app.timeline.fhir import timeline_to_fhir, FHIRException
+from app.timeline.fhir import FHIRException
 from app.timeline.timeline_service import TimelineService, TimelineError
 
 logger = logging.getLogger(__name__)
@@ -24,16 +24,6 @@ class TimelineRequest(BaseModel):
     data_domain: str
 
 
-# class TimelineResponse(BaseModel):
-#     """
-#     Response model for timeline
-#     """
-#     id: uuid.UUID
-#     creation_date: datetime
-#     pseudonym: str
-#     timeline: List[TimelineEntry]
-
-
 @router.post("/timeline",
             summary="Search for all timeline events",
             tags=["timeline_group"]
@@ -41,7 +31,7 @@ class TimelineRequest(BaseModel):
 def post_timeline(
     req: TimelineRequest,
     timeline_service: TimelineService = Depends(container.get_timeline_service)
-) -> Response:
+) -> Any:
 
     span = trace.get_current_span()
     span.set_attribute("data.pseudonym", req.pseudonym)
@@ -62,7 +52,4 @@ def post_timeline(
     except TimelineError as e:
         raise FHIRException(status_code=400, severity="error", code="invalid", msg=e.message)
 
-    return Response(
-        content=timeline_to_fhir(timeline).json(indent=2),
-        status_code=200,
-    )
+    return timeline.dict()

@@ -1,15 +1,17 @@
 import logging
-from typing import List
+import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from fhir.resources.bundle import Bundle, BundleEntry
+from fhir.resources.fhirtypes import Code, UnsignedInt, Id
 
 from app.api.addressing.api import AddressingApi, AddressingError
 from app.api.localisation.api import LocalisationApi, LocalisationError
 from app.api.localisation.models import LocalisationEntry
 from app.api.metadata.api import MetadataApi
-from app.api.metadata.models import Metadata
 from app.api.pseudonym.api import PseudonymApi, PseudonymError
 from app.config import get_config
 from app.data import DataDomain, Pseudonym
-from app.timeline.models import TimelineEntry
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +34,7 @@ class TimelineService:
         self.metadata_api = metadata_api
         self.pseudonym_api = pseudonym_api
 
-    def retrieve(self, pseudonym: Pseudonym, data_domain: DataDomain) -> List[TimelineEntry]:
-        timeline = []
-
+    def retrieve(self, pseudonym: Pseudonym, data_domain: DataDomain) -> Bundle:
         # Exchange pseudonyms for localisation and addressing
         config = get_config()
 
@@ -53,24 +53,22 @@ class TimelineService:
             logger.error(f"Failed to fetch providers from localisation: {e}")
             providers = []
 
-        for provider in providers:
-            # @TODO: make this async and collect at the end
-            logger.info(f"Fetching metadata from provider {provider.name}")
-            items = self.fetch_metadata_from_provider(pseudonym, provider, data_domain)
-            if items is None:
-                logger.warning(f"Failed to fetch metadata from provider {provider.name}")
+        searchsets = self.threaded_fetch_providers(providers, pseudonym, data_domain)
 
-            timeline.append(TimelineEntry(
-                healthcare_provider_name=provider.name,
-                healthcare_provider_medmij_id=provider.medmij_id,
-                error=True if items is None else False,
-                error_msg="Failed to fetch metadata" if items is None else None,
-                items=items,
-            ))
+        return Bundle(  # type: ignore
+            resource_type="Bundle",
+            id=Id(uuid.uuid4()),
+            type=Code("searchset"),
+            total=UnsignedInt(len(searchsets)),
+            entry=searchsets        # type: ignore
+        )
 
-        return timeline
-
-    def fetch_metadata_from_provider(self, pseudonym: Pseudonym, provider: LocalisationEntry, data_domain: DataDomain) -> dict[str,Metadata]|None:
+    def fetch_metadata_from_provider(
+            self,
+            pseudonym: Pseudonym,
+            provider: LocalisationEntry,
+            data_domain: DataDomain
+    ) -> Bundle | None:
         """
         Fetch healthcare metadata from a provider
         """
@@ -82,11 +80,29 @@ class TimelineService:
             logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
             return None
 
+        if address is None:
+            logger.warning(f"No addressing found for provider {provider.name}")
+            return None
+
         # Fetch metadata at the found provider address
         metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
-        metadata = self.metadata_api.get_metadata(
+        return self.metadata_api.search_metadata(
             metadata_pseudonym,
             metadata_endpoint=address.metadata_endpoint,
+            data_domain=data_domain
         )
 
-        return metadata
+    def threaded_fetch_providers(self, providers: list[LocalisationEntry], pseudonym: Pseudonym, data_domain: DataDomain) -> list[BundleEntry]:
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [
+                executor.submit(self.fetch_metadata_from_provider, pseudonym, provider, data_domain)
+                for provider in providers
+            ]
+
+            searchsets = []
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    searchsets.append(BundleEntry(resource=result))   # type: ignore
+
+            return searchsets

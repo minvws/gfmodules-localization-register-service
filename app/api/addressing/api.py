@@ -1,7 +1,11 @@
 import logging
 import uuid
 
+import requests
+from requests import HTTPError
+
 from app.api.addressing.models import Address
+from app.api.localisation.api import LocalisationError
 from app.data import DataDomain
 
 logger = logging.getLogger(__name__)
@@ -20,15 +24,32 @@ class AddressingApi:
         self.mtls_ca = mtls_ca
         self.metadata_endpoint = metadata_endpoint
 
-    def get_addressing(self, provider_medmij_id: str, data_domain: DataDomain) -> Address:
-        logger.info(f"Fetching addressing for provider {provider_medmij_id}")
+    def get_addressing(self, provider_medmij_id: str, data_domain: DataDomain) -> Address | None:
+        try:
+            logger.info(f"Fetching addressing for provider {provider_medmij_id} / {data_domain}")
 
-        # We use a fixed provider to simulate that addressing cannot be found
-        if provider_medmij_id == "fysio.amsterdam@medmij":
-            raise AddressingError("Addressing not available for provider")
+            req = requests.post(
+                f"{self.endpoint}/metadata_endpoint",
+                json={
+                    "provider_id": provider_medmij_id,
+                    "data_domain": str(data_domain.value),
+                },
+                timeout=self.timeout,
+                cert=(self.mtls_cert, self.mtls_key),
+                verify=self.mtls_ca
+            )
+        except (Exception, HTTPError) as e:
+            raise LocalisationError(f"Failed to fetch addressing: http error: {e}")
 
+        if req.status_code == 404:
+            return None
+
+        if req.status_code != 200:
+            raise LocalisationError(f"Failed to fetch addressing: http status code: {req.status_code}")
+
+        data = req.json()
         return Address(
-            # Needed in order to convert the pseudonym
+            # Need UUID5 in order to convert the pseudonym to a deterministic UUID
             provider_id=uuid.uuid5(uuid.NAMESPACE_DNS, provider_medmij_id),
-            metadata_endpoint=f"{self.metadata_endpoint}/drs/{provider_medmij_id}/{data_domain.value}",
+            metadata_endpoint=data['endpoint'],
         )

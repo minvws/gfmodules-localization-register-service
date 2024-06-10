@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI
 import uvicorn
+from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.telemetry import setup_telemetry
@@ -66,6 +67,8 @@ def setup_fastapi() -> FastAPI:
 
     fastapi = (
         FastAPI(
+            title="Timeline service",
+            description="Aggregates and serves timeline data from various sources",
             docs_url=config.uvicorn.docs_url,
             redoc_url=config.uvicorn.redoc_url
         ) if config.uvicorn.swagger_enabled else FastAPI(
@@ -82,7 +85,7 @@ def setup_fastapi() -> FastAPI:
     return fastapi
 
 
-def default_fhir_exception_handler(request, exc):
+def default_fhir_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Default handler to convert generic exceptions to FHIR exceptions
     """
