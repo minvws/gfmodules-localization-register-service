@@ -4,8 +4,11 @@ from typing import Any
 
 from fastapi import FastAPI
 import uvicorn
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from app.telemetry import setup_telemetry
+from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 from routers.default import router as default_router
 from routers.health import router as health_router
 from routers.timeline import router as timeline_router
@@ -64,6 +67,8 @@ def setup_fastapi() -> FastAPI:
 
     fastapi = (
         FastAPI(
+            title="Timeline service",
+            description="Aggregates and serves timeline data from various sources",
             docs_url=config.uvicorn.docs_url,
             redoc_url=config.uvicorn.redoc_url
         ) if config.uvicorn.swagger_enabled else FastAPI(
@@ -76,4 +81,23 @@ def setup_fastapi() -> FastAPI:
     for router in routers:
         fastapi.include_router(router)
 
+    fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
     return fastapi
+
+
+def default_fhir_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """
+    Default handler to convert generic exceptions to FHIR exceptions
+    """
+    outcome = OperationOutcome(issue=[
+        OperationOutcomeIssue(
+            severity="error",
+            code="exception",
+            details=OperationOutcomeDetail(text=f"{exc}")
+        )
+    ])
+
+    return JSONResponse(
+        status_code=500,
+        content=outcome.model_dump()
+    )

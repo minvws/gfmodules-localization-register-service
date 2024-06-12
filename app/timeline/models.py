@@ -10,5 +10,5 @@ class TimelineEntry(BaseModel):
     healthcare_provider_medmij_id: str
     error: bool = False
     error_msg: Optional[str] = None
-    entry: Optional[dict[str, Metadata]] = None
+    items: Optional[dict[str, Metadata]] = None
 

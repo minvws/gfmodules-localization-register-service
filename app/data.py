@@ -16,6 +16,12 @@ class DataDomain(Enum):
         except ValueError:
             return None
 
+    def to_fhir(self) -> str:
+        if self == DataDomain.BeeldBank:
+            return 'ImagingStudy'
+        if self == DataDomain.Medicatie:
+            return 'MedicationRequest'
+        return ""
 
 # Pseudonym for a hashed BSN
 Pseudonym = uuid.UUID
