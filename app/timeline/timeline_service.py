@@ -85,12 +85,21 @@ class TimelineService:
             return None
 
         # Fetch metadata at the found provider address
-        metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
-        return self.metadata_api.search_metadata(
-            metadata_pseudonym,
-            metadata_endpoint=address.metadata_endpoint,
-            data_domain=data_domain
-        )
+        try:
+            metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
+            return self.metadata_api.search_metadata(
+                metadata_pseudonym,
+                metadata_endpoint=address.metadata_endpoint,
+                data_domain=data_domain
+            )
+        except (ValueError, Exception):
+            return Bundle(  # type: ignore
+                resource_type="Bundle",
+                id=Id(uuid.uuid4()),
+                type=Code("searchset"),
+                total=UnsignedInt(0),
+                entry=[]
+            )
 
     def threaded_fetch_providers(self, providers: list[LocalisationEntry], pseudonym: Pseudonym, data_domain: DataDomain) -> list[BundleEntry]:
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -101,8 +110,10 @@ class TimelineService:
 
             searchsets = []
             for future in as_completed(futures):
-                result = future.result()
-                if result is not None:
-                    searchsets.append(BundleEntry(resource=result))   # type: ignore
-
+                try:
+                    result = future.result()
+                    if result is not None:
+                        searchsets.append(BundleEntry(resource=result))   # type: ignore
+                except Exception as e:
+                    logger.error(f"Failed to fetch metadata from provider: {e}")
             return searchsets
