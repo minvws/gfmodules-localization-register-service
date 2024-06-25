@@ -1,4 +1,4 @@
-from app.config import Config, ConfigApp, LogLevel, ConfigDatabase, ConfigUvicorn, ConfigTelemetry, ConfigPseudonymApi, \
+from app.config import Config, ConfigApp, LogLevel, ConfigUvicorn, ConfigTelemetry, ConfigPseudonymApi, \
     ConfigLocalisationApi, ConfigAddressingApi, ConfigMetadataApi
 
 
@@ -6,10 +6,6 @@ def get_test_config() -> Config:
     return Config(
         app=ConfigApp(
             loglevel=LogLevel.error,
-        ),
-        database=ConfigDatabase(
-            dsn="sqlite:///:memory:",
-            create_tables=True,
         ),
         pseudonym_api=ConfigPseudonymApi(
             endpoint="http://pseudonym-api",

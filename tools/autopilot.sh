@@ -11,15 +11,12 @@ if [ -e .autopilot ] ; then
     exit;
 fi
 
-# Create postgres database within docker
-echo "➡️ Firing up postgres database in a docker container"
 if
     docker compose version
     [ $? -eq 1 ] ; then
     echo "⚠️ Docker compose is not a valid command. Perhaps you are running on a old docker version (needs v2 or higher)."
     exit;
 fi
-docker compose up timeline_db -d
 
 # Generate TLS certificates (they are not used in the default configuration)
 echo "➡️ Generating TLS certificates"
@@ -40,10 +37,6 @@ fi
 # Build the application docker container
 echo "➡️ Building the application docker container"
 make container-build
-
-# Populate database
-echo "➡️ Populating the database"
-docker compose run app ./tools/migrate_db.sh timeline_db postgres postgres postgres
 
 # Run the container
 echo "➡️ Running the application docker container"
