@@ -21,16 +21,6 @@ class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
 
 
-class ConfigDatabase(BaseModel):
-    dsn: str
-    create_tables: bool = Field(default=False)
-    retry_backoff: list[float] = Field(default=[0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 4.8, 6.4, 10.0])
-    pool_size: int = Field(default=5, ge=0, lt=100)
-    max_overflow: int = Field(default=10, ge=0, lt=100)
-    pool_pre_ping: bool = Field(default=False)
-    pool_recycle: int = Field(default=3600, ge=0)
-
-
 class ConfigPseudonymApi(BaseModel):
     endpoint: str
     provider_id: str
@@ -89,7 +79,6 @@ class ConfigTelemetry(BaseModel):
 
 class Config(BaseModel):
     app: ConfigApp
-    database: ConfigDatabase
     uvicorn: ConfigUvicorn
     pseudonym_api: ConfigPseudonymApi
     localisation_api: ConfigLocalisationApi
@@ -129,13 +118,6 @@ def get_config(path: str | None = None) -> Config:
     ini_data = read_ini_file(path)
 
     try:
-        # Convert database.retry_backoff to a list of floats
-        if "retry_backoff" in ini_data["database"] and isinstance(ini_data["database"]["retry_backoff"], str):
-            # convert the string to a list of floats
-            ini_data["database"]["retry_backoff"] = [
-                float(i) for i in ini_data["database"]["retry_backoff"].split(",")
-            ]
-
         _CONFIG = Config(**ini_data)
     except ValidationError as e:
         raise e

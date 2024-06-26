@@ -1,15 +1,6 @@
 [app]
 loglevel=debug
 
-[database]
-dsn=postgresql+psycopg://postgres:postgres@timeline_db:5432/postgres
-create_tables=false
-retry_backoff=0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 4.8, 6.4, 10.0
-pool_size=5
-max_overflow=10
-pool_pre_ping=False
-pool_recycle=1800
-
 [pseudonym_api]
 endpoint=http://pseudonym:8504
 provider_id=4c63e018-e6cf-45e0-a0d0-540e72d91f08

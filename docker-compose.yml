@@ -16,17 +16,6 @@ services:
                 aliases:
                     -  timeline
 
-    timeline_db:
-        image: postgres:14
-        environment:
-            POSTGRES_DB: postgres
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-        ports:
-            - 5405:5432
-        networks:
-            - zmodules
-
     jaeger:
         image: jaegertracing/all-in-one:1.56
         environment:

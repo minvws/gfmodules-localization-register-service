@@ -6,15 +6,11 @@ from app.api.localisation.api import LocalisationApi
 from app.api.metadata.api import MetadataApi
 from app.api.pseudonym.api import PseudonymApi
 from app.timeline.timeline_service import TimelineService
-from app.db.db import Database
 from app.config import get_config
 
 
 def container_config(binder: inject.Binder) -> None:
     config = get_config()
-
-    db = Database(dsn=config.database.dsn)
-    binder.bind(Database, db)
 
     cfg = config.pseudonym_api
     pseudonym_api = PseudonymApi(
@@ -61,11 +57,6 @@ def container_config(binder: inject.Binder) -> None:
         metadata_api=metadata_api,
     )
     binder.bind(TimelineService, timeline_service)
-
-
-def get_database() -> Database:
-    return inject.instance(Database)
-
 
 def get_timeline_service() -> TimelineService:
     return inject.instance(TimelineService)
