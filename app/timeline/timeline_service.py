@@ -12,6 +12,7 @@ from app.api.metadata.api import MetadataApi
 from app.api.pseudonym.api import PseudonymApi, PseudonymError
 from app.config import get_config
 from app.data import DataDomain, Pseudonym
+from app.timeline.fhir import OperationOutcome
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class TimelineService:
             pseudonym: Pseudonym,
             provider: LocalisationEntry,
             data_domain: DataDomain
-    ) -> Bundle | None:
+    ) -> Bundle | OperationOutcome | None:
         """
         Fetch healthcare metadata from a provider
         """
@@ -78,11 +79,11 @@ class TimelineService:
             address = self.addressing_api.get_addressing(provider.medmij_id, data_domain)
         except AddressingError as e:
             logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
-            return None
+            raise Exception(f"Failed to fetch addressing from provider {provider}: {e}")
 
         if address is None:
             logger.warning(f"No addressing found for provider {provider.name}")
-            return None
+            raise Exception(f"No addressing found for provider {provider}")
 
         # Fetch metadata at the found provider address
         try:
@@ -90,15 +91,25 @@ class TimelineService:
             return self.metadata_api.search_metadata(
                 metadata_pseudonym,
                 metadata_endpoint=address.metadata_endpoint,
-                data_domain=data_domain
+                data_domain=data_domain,
+                provider_id=str(address.provider_id)
             )
-        except (ValueError, Exception):
-            return Bundle(  # type: ignore
-                resource_type="Bundle",
-                id=Id(uuid.uuid4()),
-                type=Code("searchset"),
-                total=UnsignedInt(0),
-                entry=[]
+        except Exception as e:
+            return OperationOutcome(
+                issue=[
+                    {  # type: ignore
+                        "severity": "error",
+                        "code": "exception",
+                        "details": [
+                            {
+                                "text": str(e)
+                            },
+                            {
+                                "text": f"{provider.name} ({provider.medmij_id})"
+                            }
+                        ]
+                    }
+                ],
             )
 
     def threaded_fetch_providers(self, providers: list[LocalisationEntry], pseudonym: Pseudonym, data_domain: DataDomain) -> list[BundleEntry]:
@@ -112,8 +123,20 @@ class TimelineService:
             for future in as_completed(futures):
                 try:
                     result = future.result()
-                    if result is not None:
+                    if isinstance(result, Bundle):
                         searchsets.append(BundleEntry(resource=result))   # type: ignore
                 except Exception as e:
                     logger.error(f"Failed to fetch metadata from provider: {e}")
+                    searchsets.append(BundleEntry(resource=OperationOutcome(
+                        id=Id(uuid.uuid4()),
+                        issue=[
+                            {  # type: ignore
+                                "severity": "error",
+                                "code": "exception",
+                                "details": {
+                                    "text": str(e)
+                                }
+                            }
+                        ],
+                    ).dict()))
             return searchsets
