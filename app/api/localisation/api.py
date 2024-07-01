@@ -58,7 +58,7 @@ class LocalisationApi:
         try:
             return LocalisationEntry(
                 medmij_id=data['provider_id'],
-                name=data['name'] if 'name' in data else 'naampje',
+                name=data['name'] if 'name' in data else data['provider_id'],
                 data_domain=DataDomain.from_str(data['data_domain']) or DataDomain.Unknown,
             )
         except KeyError:
