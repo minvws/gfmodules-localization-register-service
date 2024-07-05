@@ -15,6 +15,10 @@ from typing import Type, Any
 from app.data import Pseudonym, DataDomain
 
 
+class MetadataApiException(Exception):
+    pass
+
+
 class MetadataApi:
     def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
         self.endpoint = endpoint
@@ -23,7 +27,7 @@ class MetadataApi:
         self.mtls_key = mtls_key
         self.mtls_ca = mtls_ca
 
-    def search_metadata(self, pseudonym: Pseudonym, metadata_endpoint: str, data_domain: DataDomain) -> Bundle:
+    def search_metadata(self, pseudonym: Pseudonym, metadata_endpoint: str, data_domain: DataDomain, provider_id: str) -> Bundle:
         """
         Retrieves metadata for a given pseudonym from the metadata service
         """
@@ -34,11 +38,13 @@ class MetadataApi:
                 params={"pseudonym": str(pseudonym)},
                 timeout=self.timeout,
             )
-        except (Exception, HTTPError) as e:
-            raise ValueError(f"Failed to fetch metadata: {e}")
+        except HTTPError as e:
+            raise MetadataApiException(f"Metadata register returned unexpected HTTP error: {e}")
+        except Exception as e:
+            raise MetadataApiException(f"Metadata register returned unexpected error: {e}")
 
         if req.status_code != 200:
-            raise ValueError(f"Failed to fetch metadata: {req.status_code}")
+            raise MetadataApiException(f"Metadata register returned unexpected status code: {req.status_code}")
 
         metadata = req.json()
 
@@ -46,56 +52,57 @@ class MetadataApi:
         resources = {}
         # Linked resources are resources that are linked to the main resources
         linked_resources = dict[str, Any]()
-        for entry in metadata["entry"]:
-            if entry["resource"]["resourceType"] == "ImagingStudy":
-                obj = ImagingStudy.parse_obj(entry["resource"])
+        if "entry" in metadata:
+            for entry in metadata["entry"]:
+                if entry["resource"]["resourceType"] == "ImagingStudy":
+                    obj = ImagingStudy.parse_obj(entry["resource"])
 
-                # Add imagingstudy as resource
-                key = "ImagingStudy/" + obj.id
-                resources[key] = obj
+                    # Add imagingstudy as resource
+                    key = "ImagingStudy/" + obj.id
+                    resources[key] = obj
 
-                if isinstance(obj.subject, Reference):
-                    # Add patient
-                    ref_id = obj.subject.reference
-                    if ref_id.startswith("urn:uuid:"):
-                        ref_id = "Patient/" + ref_id[9:]
-                    patient = self.get_metadata_resource(pseudonym, metadata_endpoint, Patient, ref_id)
-                    linked_resources[ref_id] = patient
+                    if isinstance(obj.subject, Reference):
+                        # Add patient
+                        ref_id = obj.subject.reference
+                        if ref_id.startswith("urn:uuid:"):
+                            ref_id = "Patient/" + ref_id[9:]
+                        patient = self.get_metadata_resource(pseudonym, metadata_endpoint, Patient, ref_id)
+                        linked_resources[ref_id] = patient
 
-                for series_entry in obj.series:
-                    if not isinstance(series_entry, ImagingStudySeries):
-                        continue
-                    if series_entry.performer is None:
-                        continue
-                    for ref in series_entry.performer:
-                        if not isinstance(ref, ImagingStudySeriesPerformer):
+                    for series_entry in obj.series:
+                        if not isinstance(series_entry, ImagingStudySeries):
                             continue
-                        if ref.actor is None:
+                        if series_entry.performer is None:
                             continue
-                        if not isinstance(ref.actor, Reference):
-                            continue
-                        if ref.actor.reference is None:
-                            continue
-                        if ref.actor.type is None:
-                            continue
+                        for ref in series_entry.performer:
+                            if not isinstance(ref, ImagingStudySeriesPerformer):
+                                continue
+                            if ref.actor is None:
+                                continue
+                            if not isinstance(ref.actor, Reference):
+                                continue
+                            if ref.actor.reference is None:
+                                continue
+                            if ref.actor.type is None:
+                                continue
 
-                        # Add practitioner
-                        if ref.actor.type == "Practitioner":
-                            ref_id = ref.actor.reference
-                            if ref.actor.reference.startswith("urn:uuid:"):
-                                ref_id = "Practitioner/" + ref.actor.reference[9:]
-                            if ref_id not in resources:
-                                practitioner = self.get_metadata_resource(pseudonym, metadata_endpoint, Practitioner, ref_id)
-                                linked_resources[ref_id] = practitioner
+                            # Add practitioner
+                            if ref.actor.type == "Practitioner":
+                                ref_id = ref.actor.reference
+                                if ref.actor.reference.startswith("urn:uuid:"):
+                                    ref_id = "Practitioner/" + ref.actor.reference[9:]
+                                if ref_id not in resources:
+                                    practitioner = self.get_metadata_resource(pseudonym, metadata_endpoint, Practitioner, ref_id)
+                                    linked_resources[ref_id] = practitioner
 
-                        # Add organization
-                        if ref.actor.type == "Organization":
-                            ref_id = ref.actor.reference
-                            if ref.actor.reference.startswith("urn:uuid:"):
-                                ref_id = "Organization/" + ref.actor.reference[9:]
-                            if ref_id not in resources:
-                                organization = self.get_metadata_resource(pseudonym, metadata_endpoint, Organization, ref_id)
-                                linked_resources[ref_id] = organization
+                            # Add organization
+                            if ref.actor.type == "Organization":
+                                ref_id = ref.actor.reference
+                                if ref.actor.reference.startswith("urn:uuid:"):
+                                    ref_id = "Organization/" + ref.actor.reference[9:]
+                                if ref_id not in resources:
+                                    organization = self.get_metadata_resource(pseudonym, metadata_endpoint, Organization, ref_id)
+                                    linked_resources[ref_id] = organization
 
         entries = []
         for res in resources.values():
@@ -103,13 +110,15 @@ class MetadataApi:
         for res in linked_resources.values():
             entries.append(BundleEntry(resource=res.dict(), search=dict(mode="include")))  # type: ignore
 
-        return Bundle(  # type: ignore
+        # Somehow it would be nice if we actually can add the provider id in the searchset as well, as this can provide
+        # additional information to the caller
+        return Bundle(
             resource_type="Bundle",
             id=Id(uuid.uuid4()),
             type=Code("searchset"),
             total=UnsignedInt(len(resources)),
             entry=entries       # type: ignore
-        ).dict()
+        )
 
     def get_metadata_resource(self,
                               pseudonym: Pseudonym,
@@ -123,10 +132,10 @@ class MetadataApi:
                 timeout=self.timeout,
             )
         except (Exception, HTTPError) as e:
-            raise ValueError(f"Failed to fetch metadata resource: {e}")
+            raise MetadataApiException(f"Failed to fetch metadata resource: {e}")
 
         if req.status_code != 200:
-            raise ValueError(f"Failed to fetch metadata resource: {req.status_code}")
+            raise MetadataApiException(f"Failed to fetch metadata resource: {req.status_code}")
 
         resource = req.json()
         return resource_cls.parse_obj(resource)

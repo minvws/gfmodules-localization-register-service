@@ -1,15 +1,11 @@
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from time import sleep
 
-import requests
 from fhir.resources.bundle import Bundle, BundleEntry
 from fhir.resources.fhirtypes import Code, UnsignedInt, Id
-from opentelemetry import baggage
+from fhir.resources.operationoutcome import OperationOutcome, OperationOutcomeIssue
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
-from opentelemetry.context import Context
-from opentelemetry.sdk import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from app.api.addressing.api import AddressingApi, AddressingError
@@ -20,7 +16,6 @@ from app.api.pseudonym.api import PseudonymApi, PseudonymError
 from app.config import get_config
 from app.data import DataDomain, Pseudonym
 from app.telemetry import get_tracer
-from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 
 logger = logging.getLogger(__name__)
 
@@ -78,56 +73,48 @@ class TimelineService:
             provider: LocalisationEntry,
             data_domain: DataDomain,
             carrier: str
-    ) -> Bundle | None:
+    ) -> Bundle | OperationOutcome | None:
         """
         Fetch healthcare metadata from a provider
         """
         ctx = TraceContextTextMapPropagator().extract(carrier={'traceparent': carrier})
 
-        with get_tracer().start_as_current_span("thread executor:" + str(uuid.uuid4()), context=ctx) as span:
-
+        with get_tracer().start_as_current_span("thread executor:" + str(uuid.uuid4()), context=ctx):
             try:
                 # Fetch address for the given provider
                 logger.info(f"Fetching addressing from provider {provider.name}")
                 address = self.addressing_api.get_addressing(provider.medmij_id, data_domain)
             except AddressingError as e:
                 logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
-                return None
+                raise Exception(f"Failed to fetch addressing from provider {provider}: {e}")
 
             if address is None:
                 logger.warning(f"No addressing found for provider {provider.name}")
-                return None
+                raise Exception(f"No addressing found for provider {provider}")
 
             # Fetch metadata at the found provider address
             try:
                 metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
-                meta = self.metadata_api.search_metadata(
+                return self.metadata_api.search_metadata(
                     metadata_pseudonym,
                     metadata_endpoint=address.metadata_endpoint,
-                    data_domain=data_domain
+                    data_domain=data_domain,
+                    provider_id=str(address.provider_id)
                 )
-                span.add_event("finished")
-                return meta
-
-            except (ValueError, Exception) as err:
-                return Bundle(  # type: ignore
-                    resource_type="Bundle",
-                    id=Id(uuid.uuid4()),
-                    type=Code("searchset"),
-                    total=UnsignedInt(0),
-                    entry=[
-                        BundleEntry(  # type: ignore
-                            resource=OperationOutcome(  # type: ignore
-                                issue=[OperationOutcomeIssue(
-                                    severity="error",
-                                    code="error",
-                                    details=OperationOutcomeDetail(
-                                        text=str(err)
-                                    )
-                                )]
-                            ).dict()
+            except Exception as e:
+                return OperationOutcome(
+                    issue=[
+                        OperationOutcomeIssue(
+                            severity="error",
+                            code="exception",
+                            details={
+                                "text":
+                                    str(e)
+                                    + " while fetching metadata from provider"
+                                    + f"{provider.name} ({provider.medmij_id})"
+                            }
                         )
-                    ]
+                    ],
                 )
 
     def threaded_fetch_providers(
@@ -136,7 +123,7 @@ class TimelineService:
             pseudonym: Pseudonym,
             data_domain: DataDomain
     ) -> list[BundleEntry]:
-        with get_tracer().start_as_current_span("Async fetching") as f_span:
+        with get_tracer().start_as_current_span("Async fetching"):
             carrier: dict[str, str] = {}
             W3CBaggagePropagator().inject(carrier)
             TraceContextTextMapPropagator().inject(carrier)
@@ -153,13 +140,24 @@ class TimelineService:
                     for provider in providers
                 ]
 
-                searchsets = []
-                for future in as_completed(futures):
-                    try:
-                        result = future.result()
-                        if result is not None:
-                            searchsets.append(BundleEntry(resource=result))   # type: ignore
-                    except Exception as e:
-                        logger.error(f"Failed to fetch metadata from provider: {e}")
-                f_span.add_event("FHIR resources fetched")
-                return searchsets
+            searchsets = []
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    entry = BundleEntry(resource=result)
+                    searchsets.append(entry)   # type: ignore
+                except Exception as e:
+                    logger.error(f"Failed to fetch metadata from provider: {e}")
+                    searchsets.append(BundleEntry(resource=OperationOutcome(
+                        id=Id(uuid.uuid4()),
+                        issue=[
+                            {  # type: ignore
+                                "severity": "error",
+                                "code": "exception",
+                                "details": {
+                                    "text": str(e)
+                                }
+                            }
+                        ],
+                    ).dict()))
+            return searchsets
