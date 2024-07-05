@@ -3,7 +3,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fhir.resources.bundle import Bundle, BundleEntry
-from fhir.resources.fhirtypes import Code, UnsignedInt, Id
+from fhir.resources.fhirtypes import Code, UnsignedInt, Id, CodeableConceptType
 from fhir.resources.operationoutcome import OperationOutcome, OperationOutcomeIssue
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
@@ -102,17 +102,15 @@ class TimelineService:
                     provider_id=str(address.provider_id)
                 )
             except Exception as e:
-                return OperationOutcome(
+                return OperationOutcome(  # type: ignore
                     issue=[
-                        OperationOutcomeIssue(
-                            severity="error",
-                            code="exception",
-                            details={
-                                "text":
-                                    str(e)
-                                    + " while fetching metadata from provider"
-                                    + f"{provider.name} ({provider.medmij_id})"
-                            }
+                        OperationOutcomeIssue(  # type: ignore
+                            severity=Code("error"),
+                            code=Code("exception"),
+                            details=CodeableConceptType(
+                                text=str(e) + " while fetching metadata from provider"
+                                            + f"{provider.name} ({provider.medmij_id})"
+                            )
                         )
                     ],
                 )
@@ -144,8 +142,8 @@ class TimelineService:
             for future in as_completed(futures):
                 try:
                     result = future.result()
-                    entry = BundleEntry(resource=result)
-                    searchsets.append(entry)   # type: ignore
+                    entry = BundleEntry(resource=result)  # type: ignore
+                    searchsets.append(entry)
                 except Exception as e:
                     logger.error(f"Failed to fetch metadata from provider: {e}")
                     searchsets.append(BundleEntry(resource=OperationOutcome(
