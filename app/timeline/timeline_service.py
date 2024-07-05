@@ -1,9 +1,16 @@
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import sleep
 
+import requests
 from fhir.resources.bundle import Bundle, BundleEntry
 from fhir.resources.fhirtypes import Code, UnsignedInt, Id
+from opentelemetry import baggage
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.context import Context
+from opentelemetry.sdk import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from app.api.addressing.api import AddressingApi, AddressingError
 from app.api.localisation.api import LocalisationApi, LocalisationError
@@ -12,6 +19,8 @@ from app.api.metadata.api import MetadataApi
 from app.api.pseudonym.api import PseudonymApi, PseudonymError
 from app.config import get_config
 from app.data import DataDomain, Pseudonym
+from app.telemetry import get_tracer
+from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 
 logger = logging.getLogger(__name__)
 
@@ -67,53 +76,90 @@ class TimelineService:
             self,
             pseudonym: Pseudonym,
             provider: LocalisationEntry,
-            data_domain: DataDomain
+            data_domain: DataDomain,
+            carrier: str
     ) -> Bundle | None:
         """
         Fetch healthcare metadata from a provider
         """
-        try:
-            # Fetch address for the given provider
-            logger.info(f"Fetching addressing from provider {provider.name}")
-            address = self.addressing_api.get_addressing(provider.medmij_id, data_domain)
-        except AddressingError as e:
-            logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
-            return None
+        ctx = TraceContextTextMapPropagator().extract(carrier={'traceparent': carrier})
 
-        if address is None:
-            logger.warning(f"No addressing found for provider {provider.name}")
-            return None
+        with get_tracer().start_as_current_span("thread executor:" + str(uuid.uuid4()), context=ctx) as span:
 
-        # Fetch metadata at the found provider address
-        try:
-            metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
-            return self.metadata_api.search_metadata(
-                metadata_pseudonym,
-                metadata_endpoint=address.metadata_endpoint,
-                data_domain=data_domain
-            )
-        except (ValueError, Exception):
-            return Bundle(  # type: ignore
-                resource_type="Bundle",
-                id=Id(uuid.uuid4()),
-                type=Code("searchset"),
-                total=UnsignedInt(0),
-                entry=[]
-            )
+            try:
+                # Fetch address for the given provider
+                logger.info(f"Fetching addressing from provider {provider.name}")
+                address = self.addressing_api.get_addressing(provider.medmij_id, data_domain)
+            except AddressingError as e:
+                logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
+                return None
 
-    def threaded_fetch_providers(self, providers: list[LocalisationEntry], pseudonym: Pseudonym, data_domain: DataDomain) -> list[BundleEntry]:
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = [
-                executor.submit(self.fetch_metadata_from_provider, pseudonym, provider, data_domain)
-                for provider in providers
-            ]
+            if address is None:
+                logger.warning(f"No addressing found for provider {provider.name}")
+                return None
 
-            searchsets = []
-            for future in as_completed(futures):
-                try:
-                    result = future.result()
-                    if result is not None:
-                        searchsets.append(BundleEntry(resource=result))   # type: ignore
-                except Exception as e:
-                    logger.error(f"Failed to fetch metadata from provider: {e}")
-            return searchsets
+            # Fetch metadata at the found provider address
+            try:
+                metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
+                meta = self.metadata_api.search_metadata(
+                    metadata_pseudonym,
+                    metadata_endpoint=address.metadata_endpoint,
+                    data_domain=data_domain
+                )
+                span.add_event("finished")
+                return meta
+
+            except (ValueError, Exception) as err:
+                return Bundle(  # type: ignore
+                    resource_type="Bundle",
+                    id=Id(uuid.uuid4()),
+                    type=Code("searchset"),
+                    total=UnsignedInt(0),
+                    entry=[
+                        BundleEntry(  # type: ignore
+                            resource=OperationOutcome(  # type: ignore
+                                issue=[OperationOutcomeIssue(
+                                    severity="error",
+                                    code="error",
+                                    details=OperationOutcomeDetail(
+                                        text=str(err)
+                                    )
+                                )]
+                            ).dict()
+                        )
+                    ]
+                )
+
+    def threaded_fetch_providers(
+            self,
+            providers: list[LocalisationEntry],
+            pseudonym: Pseudonym,
+            data_domain: DataDomain
+    ) -> list[BundleEntry]:
+        with get_tracer().start_as_current_span("Async fetching") as f_span:
+            carrier: dict[str, str] = {}
+            W3CBaggagePropagator().inject(carrier)
+            TraceContextTextMapPropagator().inject(carrier)
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [
+                    executor.submit(
+                        self.fetch_metadata_from_provider,
+                        pseudonym,
+                        provider,
+                        data_domain,
+                        carrier["traceparent"]
+                    )
+                    for provider in providers
+                ]
+
+                searchsets = []
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        if result is not None:
+                            searchsets.append(BundleEntry(resource=result))   # type: ignore
+                    except Exception as e:
+                        logger.error(f"Failed to fetch metadata from provider: {e}")
+                f_span.add_event("FHIR resources fetched")
+                return searchsets
