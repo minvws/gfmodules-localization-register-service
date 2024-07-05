@@ -32,11 +32,8 @@ def post_timeline(
     req: TimelineRequest,
     timeline_service: TimelineService = Depends(container.get_timeline_service)
 ) -> Any:
-
     span = trace.get_current_span()
-    span.set_attribute("data.pseudonym", req.pseudonym)
-    span.set_attribute("data.data_domain", req.data_domain)
-
+    span.update_name(f"POST /timeline pseudonym={req.pseudonym} data_domain={req.data_domain}")
     pseudonym = str_to_pseudonym(req.pseudonym)
     if pseudonym is None:
         raise FHIRException(status_code=400, severity="error", code="invalid", msg="Invalid pseudonym")
@@ -51,5 +48,6 @@ def post_timeline(
             tl_span.add_event("timeline_retrieved")
     except TimelineError as e:
         raise FHIRException(status_code=400, severity="error", code="invalid", msg=e.message)
-
-    return timeline.dict()
+    ret_value = timeline.dict()
+    span.set_attribute("data.number_of_bundles", timeline.total)
+    return ret_value

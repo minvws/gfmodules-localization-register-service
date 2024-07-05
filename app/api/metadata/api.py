@@ -112,13 +112,13 @@ class MetadataApi:
 
         # Somehow it would be nice if we actually can add the provider id in the searchset as well, as this can provide
         # additional information to the caller
-        return Bundle(  # type: ignore
+        return Bundle(
             resource_type="Bundle",
             id=Id(uuid.uuid4()),
             type=Code("searchset"),
             total=UnsignedInt(len(resources)),
             entry=entries       # type: ignore
-        ).dict()
+        )
 
     def get_metadata_resource(self,
                               pseudonym: Pseudonym,

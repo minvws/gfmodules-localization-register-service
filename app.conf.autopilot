@@ -24,8 +24,8 @@ timeout=10
 [telemetry]
 enabled = True
 endpoint = http://tracing:4317
-service_name = timeline
-tracer_name = zmodules.service.timeline
+service_name = Lokalisatie Register Service
+tracer_name = zmodules.service.localisation_register_service
 
 [uvicorn]
 swagger_enabled = True
