@@ -50,7 +50,7 @@ class TimelineService:
             raise TimelineError(f"Failed to exchange pseudonym: {e}")
 
         # Find providers in localisation service and iterate each one
-        logger.info(f"Fetching providers for localisation {localisation_pseudonym} and data domain {data_domain}")
+        logger.info(f"Fetching providers for localisation {localisation_pseudonym} and data domain {str(data_domain)}")
         try:
             providers = self.localisation_api.get_providers(localisation_pseudonym, data_domain)
         except LocalisationError as e:
