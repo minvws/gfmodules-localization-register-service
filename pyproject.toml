@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "zmodules-timeline-service"
+name = "gfmodules-localization-register-service"
 version = "0.1.0"
 description = ""
 license = "EUPL-1.2"
 authors = ["Ministerie van Volksgezondheid, Welzijn en Sport"]
-repository = "https://github.com/minvws/nl-irealisatie-zmodules-timeline-register"
+repository = "https://github.com/minvws/gfmodules-localization-register-service"
 readme = "README.md"
 packages = [
     { include = "app" },
