@@ -1,4 +1,6 @@
-# ZModules Timeline Service
+### Localization Register Service (LRS)
+
+The Localization Register Service is the aggregate service of the underlying services.
 
 
 ## First run
