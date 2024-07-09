@@ -39,8 +39,8 @@ echo "➡️ Building the application docker container"
 make container-build
 
 # Run the container
-echo "➡️ Running the application docker container"
-docker compose up app -d
+echo "➡️ Running the application docker container and other services"
+docker compose up -d
 
 # Create the .autopilot file
 touch .autopilot
