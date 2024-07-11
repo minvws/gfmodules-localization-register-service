@@ -72,18 +72,18 @@ class TimelineService:
             pseudonym: Pseudonym,
             provider: LocalisationEntry,
             data_domain: DataDomain,
-            carrier: str
+            carrier: dict[str, str]
     ) -> Bundle | OperationOutcome | None:
         """
         Fetch healthcare metadata from a provider
         """
-        ctx = TraceContextTextMapPropagator().extract(carrier={'traceparent': carrier})
+        ctx = TraceContextTextMapPropagator().extract(carrier)
 
         with get_tracer().start_as_current_span("thread executor:" + str(uuid.uuid4()), context=ctx):
             try:
                 # Fetch address for the given provider
                 logger.info(f"Fetching addressing from provider {provider.name}")
-                address = self.addressing_api.get_addressing(provider.medmij_id, data_domain)
+                address = self.addressing_api.get_addressing(provider.provider_id, data_domain)
             except AddressingError as e:
                 logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
                 raise Exception(f"Failed to fetch addressing from provider {provider}: {e}")
@@ -109,7 +109,7 @@ class TimelineService:
                             code=Code("exception"),
                             details=CodeableConceptType(
                                 text=str(e) + " while fetching metadata from provider"
-                                            + f"{provider.name} ({provider.medmij_id})"
+                                            + f"{provider.name} ({provider.provider_id})"
                             )
                         )
                     ],
@@ -133,7 +133,7 @@ class TimelineService:
                         pseudonym,
                         provider,
                         data_domain,
-                        carrier["traceparent"]
+                        carrier
                     )
                     for provider in providers
                 ]

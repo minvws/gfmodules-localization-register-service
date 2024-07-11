@@ -57,7 +57,7 @@ class LocalisationApi:
     def hydrate_to_localisation(data: dict[str, str]) -> LocalisationEntry | None:
         try:
             return LocalisationEntry(
-                medmij_id=data['provider_id'],
+                provider_id=data['provider_id'],
                 name=data['name'] if 'name' in data else data['provider_id'],
                 data_domain=DataDomain.from_str(data['data_domain']) or DataDomain.Unknown,
             )

@@ -24,14 +24,14 @@ class AddressingApi:
         self.mtls_ca = mtls_ca
         self.metadata_endpoint = metadata_endpoint
 
-    def get_addressing(self, provider_medmij_id: str, data_domain: DataDomain) -> Address | None:
+    def get_addressing(self, provider_id: str, data_domain: DataDomain) -> Address | None:
         try:
-            logger.info(f"Fetching addressing for provider {provider_medmij_id} / {data_domain}")
+            logger.info(f"Fetching addressing for provider {provider_id} / {data_domain}")
 
             req = requests.post(
                 f"{self.endpoint}/metadata_endpoint",
                 json={
-                    "provider_id": provider_medmij_id,
+                    "provider_id": provider_id,
                     "data_domain": str(data_domain.value),
                 },
                 timeout=self.timeout,
@@ -50,6 +50,6 @@ class AddressingApi:
         data = req.json()
         return Address(
             # Need UUID5 in order to convert the pseudonym to a deterministic UUID
-            provider_id=uuid.uuid5(uuid.NAMESPACE_DNS, provider_medmij_id),
+            provider_id=uuid.uuid5(uuid.NAMESPACE_DNS, provider_id),
             metadata_endpoint=data['endpoint'],
         )
