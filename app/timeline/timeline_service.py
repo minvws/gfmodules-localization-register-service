@@ -133,7 +133,7 @@ class TimelineService:
                         pseudonym,
                         provider,
                         data_domain,
-                        carrier["traceparent"]
+                        carrier
                     )
                     for provider in providers
                 ]
