@@ -494,7 +494,7 @@ text field with a message that describes the error.
             "severity": "error",
             "code": "exception",
             "details": {
-              "text": "No addressing found for provider medmij_id='ziekenhuis.tilburg@medmij' name='ziekenhuis.tilburg@medmij' data_domain=<DataDomain.BeeldBank: 'beeldbank'>"
+              "text": "No addressing found for provider provider_id='123456789' name='ziekenhuis.tilburg@medmij' data_domain=<DataDomain.BeeldBank: 'beeldbank'>"
             }
           }
         ]
@@ -508,7 +508,7 @@ text field with a message that describes the error.
             "severity": "error",
             "code": "exception",
             "details": {
-              "text": "No addressing found for provider medmij_id='ziekenhuis.denbosch@medmij' name='ziekenhuis.denbosch@medmij' data_domain='beeldbank'"
+              "text": "No addressing found for provider provider_id='123456789' name='ziekenhuis.denbosch@medmij' data_domain='beeldbank'"
             }
           }
         ]
