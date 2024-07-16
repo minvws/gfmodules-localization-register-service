@@ -3,7 +3,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fhir.resources.bundle import Bundle, BundleEntry
-from fhir.resources.fhirtypes import Code, UnsignedInt, Id, CodeableConceptType
+from fhir.resources.fhirtypes import Code, UnsignedInt, Id, CodeableConceptType, String
 from fhir.resources.operationoutcome import OperationOutcome, OperationOutcomeIssue
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
@@ -108,9 +108,11 @@ class TimelineService:
                             severity=Code("error"),
                             code=Code("exception"),
                             details=CodeableConceptType(
-                                text=str(e) + " while fetching metadata from provider"
-                                            + f"{provider.name} ({provider.provider_id})"
-                            )
+                                text=f"Opvragen van metadata bij {provider.name} ({provider.provider_id})"
+                                     + " is niet gelukt. Probeer het later nogmaals."
+                            ),
+                            diagnostics=String(str(e) + " while fetching metadata from provider"
+                                               + f"{provider.name} ({provider.provider_id})")
                         )
                     ],
                 )
