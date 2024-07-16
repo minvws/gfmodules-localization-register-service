@@ -1,4 +1,5 @@
 import uuid
+from typing import Type, Any
 
 import requests
 from fhir.resources.bundle import Bundle, BundleEntry
@@ -10,7 +11,6 @@ from fhir.resources.practitioner import Practitioner
 from fhir.resources.reference import Reference
 from fhir.resources.resource import Resource
 from requests import HTTPError
-from typing import Type, Any
 
 from app.data import Pseudonym, DataDomain
 
@@ -66,8 +66,10 @@ class MetadataApi:
                         ref_id = obj.subject.reference
                         if ref_id.startswith("urn:uuid:"):
                             ref_id = "Patient/" + ref_id[9:]
-                        patient = self.get_metadata_resource(pseudonym, metadata_endpoint, Patient, ref_id)
-                        linked_resources[ref_id] = patient
+                        if obj.subject.display is None:
+                            # when the display is set, there is no need to fetch the resource itself for the timeline.
+                            patient = self.get_metadata_resource(pseudonym, metadata_endpoint, Patient, ref_id)
+                            linked_resources[ref_id] = patient
 
                     for series_entry in obj.series:
                         if not isinstance(series_entry, ImagingStudySeries):
@@ -84,6 +86,9 @@ class MetadataApi:
                             if ref.actor.reference is None:
                                 continue
                             if ref.actor.type is None:
+                                continue
+                            if ref.actor.display is not None:
+                                # when the display is set, there is no need to fetch the resource itself for the timeline.
                                 continue
 
                             # Add practitioner
