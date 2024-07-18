@@ -1,6 +1,7 @@
 import uuid
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 
 # DataDomain definitions
@@ -23,19 +24,36 @@ class DataDomain(Enum):
             return 'MedicationRequest'
         return ""
 
-# Pseudonym for a hashed BSN
-Pseudonym = uuid.UUID
+    def __str__(self) -> str:
+        return self.value
 
+@dataclass
+class Pseudonym:
+    def __init__(self, value: Any) -> None:
+        self.value = uuid.UUID(str(value))
 
-def str_to_pseudonym(pseudonym: str) -> Pseudonym|None:
-    """
-    Convert a string to a UUID pseudonym
-    """
-    try:
-        return uuid.UUID(pseudonym)
-    except ValueError:
-        return None
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return f"Pseudonym({self.value})"
+
 
 
 # Healthcare ID
 HealthcareID = str
+
+
+@dataclass
+class UraNumber:
+    def __init__(self, value: Any) -> None:
+        if (isinstance(value, int) or isinstance(value, str)) and len(str(value)) <= 8 and str(value).isdigit():
+            self.value = str(value).zfill(8)
+        else:
+            raise ValueError("UraNumber must be 8 digits or less")
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"UraNumber({self.value})"

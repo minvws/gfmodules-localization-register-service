@@ -1,8 +1,9 @@
-import uuid
 
 from pydantic import BaseModel
 
+from app.data import UraNumber
+
 
 class Address(BaseModel):
-    provider_id: uuid.UUID
+    ura_number: UraNumber
     metadata_endpoint: str
