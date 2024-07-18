@@ -3,7 +3,7 @@ import logging
 import requests
 from requests import HTTPError
 
-from app.data import Pseudonym, str_to_pseudonym
+from app.data import Pseudonym
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class PseudonymApi:
         self.mtls_ca = mtls_ca
 
     def exchange(self, pseudonym: Pseudonym, provider_id: str) -> Pseudonym:
-        logger.info(f"Exchanging pseudonym {pseudonym} for provider {provider_id}")
+        logger.info(f"Exchanging pseudonym {str(pseudonym)} for provider {provider_id}")
 
         try:
             req = requests.post(
@@ -41,8 +41,9 @@ class PseudonymApi:
             raise PseudonymError(f"Failed to exchange pseudonym: {req.status_code}")
 
         data = req.json()
-        new_pseudonym = str_to_pseudonym(data.get('pseudonym', ''))
-        if new_pseudonym is None:
+        try:
+            new_pseudonym = Pseudonym(data.get('pseudonym', ''))
+        except ValueError:
             raise PseudonymError("Failed to exchange pseudonym: invalid pseudonym")
 
         return new_pseudonym

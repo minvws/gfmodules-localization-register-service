@@ -1,10 +1,45 @@
 import unittest
 
-from app.data import str_to_pseudonym
+from app.data import UraNumber, Pseudonym, DataDomain
 
 
-class TestData(unittest.TestCase):
+class TestUraNumber(unittest.TestCase):
+    def test_ura_number(self) -> None:
+        self.assertEqual("00001234", str(UraNumber("1234")))
+        self.assertEqual("12345678", str(UraNumber("12345678")))
+
+        with self.assertRaises(ValueError):
+            UraNumber("1234567890")
+        with self.assertRaises(ValueError):
+            UraNumber("foobar")
+        with self.assertRaises(ValueError):
+            UraNumber("1A525")
+        with self.assertRaises(ValueError):
+            UraNumber("")
+
+
+class TestPseudonym(unittest.TestCase):
     def test_pseudonym(self) -> None:
-        self.assertIsNone(str_to_pseudonym('invalid'))
-        self.assertIsNone(str_to_pseudonym(''))
-        self.assertIsNotNone(str_to_pseudonym('d77a2d47-9a78-4557-ab9a-c86132d1078d'))
+        self.assertEqual("79079133-8513-4ced-a21e-b7a41f0cf348", str(Pseudonym("79079133-8513-4ced-a21e-b7a41f0cf348")))
+        self.assertEqual("ea0b4ecf-8d46-4798-80a5-33252db21f1a", str(Pseudonym("ea0b4ecf-8d46-4798-80a5-33252db21f1a")))
+        self.assertEqual("ea0b4ecf-8d46-4798-80a5-33252db21f1a", str(Pseudonym("ea0b4ecf8d46479880a533252db21f1a")))
+
+        with self.assertRaises(ValueError):
+            Pseudonym("124")
+        with self.assertRaises(ValueError):
+            Pseudonym("foobar")
+        with self.assertRaises(ValueError):
+            Pseudonym("")
+
+
+class TestDataDomain(unittest.TestCase):
+    def test_datadomain(self) -> None:
+        self.assertEqual(DataDomain.from_str('beeldbank'), DataDomain.BeeldBank)
+        self.assertEqual(DataDomain.from_str('BEELDBANK'), DataDomain.BeeldBank)
+        self.assertEqual(DataDomain.from_str('BEELDbank'), DataDomain.BeeldBank)
+        self.assertIsNone(DataDomain.from_str('does not exist'))
+
+        self.assertEqual(DataDomain.from_str('str'), None)
+        self.assertEqual(DataDomain.from_str('Foobar'), None)
+
+

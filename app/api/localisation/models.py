@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
-from app.data import DataDomain
+from app.data import DataDomain, UraNumber
 
 
 class LocalisationEntry(BaseModel):
-    provider_id: str
+    ura_number: UraNumber
     name: str
     data_domain: DataDomain

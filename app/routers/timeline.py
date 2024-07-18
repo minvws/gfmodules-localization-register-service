@@ -7,7 +7,7 @@ from opentelemetry import trace
 from pydantic import BaseModel
 
 from app import container
-from app.data import str_to_pseudonym, DataDomain
+from app.data import DataDomain, Pseudonym
 from app.telemetry import get_tracer
 from app.timeline.fhir import FHIRException
 from app.timeline.timeline_service import TimelineService, TimelineError
@@ -34,8 +34,10 @@ def post_timeline(
 ) -> Any:
     span = trace.get_current_span()
     span.update_name(f"POST /timeline pseudonym={req.pseudonym} data_domain={req.data_domain}")
-    pseudonym = str_to_pseudonym(req.pseudonym)
-    if pseudonym is None:
+
+    try:
+        pseudonym = Pseudonym(req.pseudonym)
+    except ValueError:
         raise FHIRException(status_code=400, severity="error", code="invalid", msg="Invalid pseudonym")
 
     data_domain = DataDomain.from_str(req.data_domain)

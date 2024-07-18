@@ -1,12 +1,10 @@
 import logging
-import uuid
 
 import requests
 from requests import HTTPError
 
 from app.api.addressing.models import Address
-from app.api.localisation.api import LocalisationError
-from app.data import DataDomain
+from app.data import DataDomain, UraNumber
 
 logger = logging.getLogger(__name__)
 
@@ -24,32 +22,34 @@ class AddressingApi:
         self.mtls_ca = mtls_ca
         self.metadata_endpoint = metadata_endpoint
 
-    def get_addressing(self, provider_id: str, data_domain: DataDomain) -> Address | None:
+    def get_addressing(self, ura_number: UraNumber, data_domain: DataDomain) -> Address | None:
         try:
-            logger.info(f"Fetching addressing for provider {provider_id} / {data_domain}")
+            logger.info(f"Fetching addressing for ura number {str(ura_number)} / {str(data_domain)}")
 
             req = requests.post(
                 f"{self.endpoint}/metadata_endpoint",
                 json={
-                    "provider_id": provider_id,
-                    "data_domain": str(data_domain.value),
+                    "ura_number": str(ura_number),
+                    "data_domain": str(data_domain),
                 },
                 timeout=self.timeout,
                 cert=(self.mtls_cert, self.mtls_key),
                 verify=self.mtls_ca
             )
         except (Exception, HTTPError) as e:
-            raise LocalisationError(f"Failed to fetch addressing: http error: {e}")
+            raise AddressingError(f"Failed to fetch addressing: http error: {e}")
 
         if req.status_code == 404:
             return None
 
+        if req.status_code == 422:
+            raise AddressingError(f"Invalid request: {req.text}")
+
         if req.status_code != 200:
-            raise LocalisationError(f"Failed to fetch addressing: http status code: {req.status_code}")
+            raise AddressingError(f"Failed to fetch addressing: http status code: {req.status_code}")
 
         data = req.json()
         return Address(
-            # Need UUID5 in order to convert the pseudonym to a deterministic UUID
-            provider_id=uuid.uuid5(uuid.NAMESPACE_DNS, provider_id),
+            ura_number=ura_number,
             metadata_endpoint=data['endpoint'],
         )

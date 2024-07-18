@@ -27,7 +27,7 @@ class MetadataApi:
         self.mtls_key = mtls_key
         self.mtls_ca = mtls_ca
 
-    def search_metadata(self, pseudonym: Pseudonym, metadata_endpoint: str, data_domain: DataDomain, provider_id: str) -> Bundle:
+    def search_metadata(self, pseudonym: Pseudonym, metadata_endpoint: str, data_domain: DataDomain) -> Bundle:
         """
         Retrieves metadata for a given pseudonym from the metadata service
         """

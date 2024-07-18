@@ -5,7 +5,7 @@ import requests
 from requests import HTTPError
 
 from app.api.localisation.models import LocalisationEntry
-from app.data import Pseudonym, DataDomain
+from app.data import Pseudonym, DataDomain, UraNumber
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +24,26 @@ class LocalisationApi:
 
     def get_providers(self, pseudonym: Pseudonym, data_domain: DataDomain) -> List[LocalisationEntry]:
         try:
-            logger.info(f"Fetching localisation for pseudonym {pseudonym} and data domain {data_domain}")
+            logger.info(f"Fetching localisation for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
 
             req = requests.post(
                 f"{self.endpoint}/info",
                 json={
                     "pseudonym": str(pseudonym),
-                    "data_domain": str(data_domain.value),
+                    "data_domain": str(data_domain),
                 },
                 timeout=self.timeout,
                 cert=(self.mtls_cert, self.mtls_key),
-                verify=self.mtls_ca
+                verify=self.mtls_ca,
             )
         except (Exception, HTTPError) as e:
             raise LocalisationError(f"Failed to fetch localisation: http error: {e}")
 
         if req.status_code == 404:
             return []
+
+        if req.status_code == 422:
+            raise LocalisationError(f"Failed to fetch localisation: http status code: {req.status_code} {req.text}")
 
         if req.status_code != 200:
             raise LocalisationError(f"Failed to fetch localisation: http status code: {req.status_code}")
@@ -57,9 +60,9 @@ class LocalisationApi:
     def hydrate_to_localisation(data: dict[str, str]) -> LocalisationEntry | None:
         try:
             return LocalisationEntry(
-                provider_id=data['provider_id'],
-                name=data['name'] if 'name' in data else data['provider_id'],
-                data_domain=DataDomain.from_str(data['data_domain']) or DataDomain.Unknown,
+                ura_number=UraNumber(data['ura_number']),
+                name=data['name'] if 'name' in data else data['ura_number'],
+                data_domain=DataDomain(data['data_domain']),
             )
         except KeyError:
             return None

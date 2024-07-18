@@ -83,23 +83,22 @@ class TimelineService:
             try:
                 # Fetch address for the given provider
                 logger.info(f"Fetching addressing from provider {provider.name}")
-                address = self.addressing_api.get_addressing(provider.provider_id, data_domain)
+                address = self.addressing_api.get_addressing(provider.ura_number, data_domain)
             except AddressingError as e:
                 logger.error(f"Failed to fetch addressing from provider {provider}: {e}")
                 raise Exception(f"Failed to fetch addressing from provider {provider}: {e}")
 
             if address is None:
                 logger.warning(f"No addressing found for provider {provider.name}")
-                raise Exception(f"No addressing found for provider {provider}")
+                raise Exception(f"No addressing found for provider {provider.name} {str(provider.ura_number)}")
 
             # Fetch metadata at the found provider address
             try:
-                metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.provider_id))
+                metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.ura_number))
                 return self.metadata_api.search_metadata(
                     metadata_pseudonym,
                     metadata_endpoint=address.metadata_endpoint,
                     data_domain=data_domain,
-                    provider_id=str(address.provider_id)
                 )
             except Exception as e:
                 return OperationOutcome(  # type: ignore
@@ -108,11 +107,11 @@ class TimelineService:
                             severity=Code("error"),
                             code=Code("exception"),
                             details=CodeableConceptType(
-                                text=f"Opvragen van metadata bij {provider.name} ({provider.provider_id})"
+                                text=f"Opvragen van metadata bij {provider.name} ({str(provider.ura_number)})"
                                      + " is niet gelukt. Probeer het later nogmaals."
                             ),
                             diagnostics=String(str(e) + " while fetching metadata from provider"
-                                               + f"{provider.name} ({provider.provider_id})")
+                                               + f"{provider.name} ({str(provider.ura_number)})")
                         )
                     ],
                 )
