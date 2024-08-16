@@ -54,4 +54,4 @@ WORKDIR ${PROJECT_DIR}
 
 ENV PYTHONPATH=${PROJECT_DIR}
 
-CMD python -m app.main
+CMD docker/./init.sh

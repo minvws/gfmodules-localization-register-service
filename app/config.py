@@ -1,9 +1,8 @@
-from enum import Enum
 import configparser
+from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, ValidationError
-from pydantic import Field
+from pydantic import BaseModel, ValidationError, Field
 
 _PATH = "app.conf"
 _CONFIG = None
@@ -64,6 +63,8 @@ class ConfigUvicorn(BaseModel):
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=8505, gt=0, lt=65535)
     reload: bool = Field(default=True)
+    reload_delay: float = Field(default=1)
+    reload_dirs: list[str] = Field(default=["app"])
     use_ssl: bool = Field(default=False)
     ssl_base_dir: str | None
     ssl_cert_file: str | None

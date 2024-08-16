@@ -1,18 +1,17 @@
 import logging
-
 from typing import Any
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.telemetry import setup_telemetry
-from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
+from app.config import get_config
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.timeline import router as timeline_router
-from app.config import get_config
+from app.telemetry import setup_telemetry
+from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 
 
 def get_uvicorn_params() -> dict[str, Any]:
@@ -22,6 +21,8 @@ def get_uvicorn_params() -> dict[str, Any]:
         "host": config.uvicorn.host,
         "port": config.uvicorn.port,
         "reload": config.uvicorn.reload,
+        "reload_delay": config.uvicorn.reload_delay,
+        "reload_dirs": config.uvicorn.reload_dirs,
     }
     if (config.uvicorn.use_ssl and
             config.uvicorn.ssl_base_dir is not None and
