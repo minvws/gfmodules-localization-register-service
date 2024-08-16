@@ -7,6 +7,7 @@ services:
             args:
                 NEW_UID: ${NEW_UID:-1000}
                 NEW_GID: ${NEW_GID:-1000}
+            dockerfile: docker/Dockerfile
         volumes:
             - ./:/src
         ports:
