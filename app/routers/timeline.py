@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from app import container
 from app.data import DataDomain, Pseudonym
-from app.stats import get_stats
 from app.telemetry import get_tracer
 from app.timeline.fhir import FHIRException
 from app.timeline.timeline_service import TimelineService, TimelineError
@@ -35,8 +34,6 @@ def post_timeline(
 ) -> Any:
     span = trace.get_current_span()
     span.update_name(f"POST /timeline pseudonym={req.pseudonym} data_domain={req.data_domain}")
-
-    get_stats().inc("http.post.timeline")
 
     try:
         pseudonym = Pseudonym(req.pseudonym)

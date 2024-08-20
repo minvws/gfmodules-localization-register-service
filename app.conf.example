@@ -51,6 +51,8 @@ enabled = True
 host = 127.0.0.1
 # Port for statsd server
 port = 8125
+# Module name for statsd
+module_name = addressing
 
 [uvicorn]
 # If true, the api docs will be enabled

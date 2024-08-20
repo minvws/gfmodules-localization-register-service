@@ -29,8 +29,9 @@ tracer_name = zmodules.service.localisation_register_service
 
 [stats]
 enabled = True
-host = 127.0.0.1
+host = graphite
 port = 8125
+module_name = timeline
 
 [uvicorn]
 swagger_enabled = True

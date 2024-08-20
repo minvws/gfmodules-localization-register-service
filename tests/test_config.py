@@ -49,5 +49,6 @@ def get_test_config() -> Config:
             enabled=False,
             host=None,
             port=None,
+            module_name=None,
         ),
     )
