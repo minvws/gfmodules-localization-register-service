@@ -10,6 +10,7 @@ from app.config import get_config
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.timeline import router as timeline_router
+from app.stats import setup_stats
 from app.telemetry import setup_telemetry
 from app.timeline.fhir import OperationOutcome, OperationOutcomeIssue, OperationOutcomeDetail
 
@@ -45,6 +46,9 @@ def run() -> None:
 def create_fastapi_app() -> FastAPI:
     application_init()
     fastapi = setup_fastapi()
+
+    if get_config().stats.enabled:
+        setup_stats()
 
     if get_config().telemetry.enabled:
         setup_telemetry(fastapi)
