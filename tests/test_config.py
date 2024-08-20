@@ -1,5 +1,5 @@
 from app.config import Config, ConfigApp, LogLevel, ConfigUvicorn, ConfigTelemetry, ConfigPseudonymApi, \
-    ConfigLocalisationApi, ConfigAddressingApi, ConfigMetadataApi
+    ConfigLocalisationApi, ConfigAddressingApi, ConfigMetadataApi, ConfigStats
 
 
 def get_test_config() -> Config:
@@ -44,5 +44,11 @@ def get_test_config() -> Config:
             endpoint=None,
             service_name=None,
             tracer_name=None,
+        ),
+        stats=ConfigStats(
+            enabled=False,
+            host=None,
+            port=None,
+            module_name=None,
         ),
     )

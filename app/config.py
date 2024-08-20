@@ -71,6 +71,13 @@ class ConfigUvicorn(BaseModel):
     ssl_key_file: str | None
 
 
+class ConfigStats(BaseModel):
+    enabled: bool = Field(default=False)
+    host: str | None
+    port: int | None
+    module_name: str | None
+
+
 class ConfigTelemetry(BaseModel):
     enabled: bool = Field(default=False)
     endpoint: str | None
@@ -86,6 +93,7 @@ class Config(BaseModel):
     addressing_api: ConfigAddressingApi
     metadata_api: ConfigMetadataApi
     telemetry: ConfigTelemetry
+    stats: ConfigStats
 
 
 def read_ini_file(path: str) -> Any:
