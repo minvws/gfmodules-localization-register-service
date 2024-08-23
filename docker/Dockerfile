@@ -31,7 +31,8 @@ RUN apt update && \
         gnupg2 \
         make \
         postgresql-client-15 \
-        postgresql-client-common
+        postgresql-client-common \
+        curl
 
 RUN pip3 install --upgrade pip && \
     pip3 install poetry==1.7 --no-cache-dir
