@@ -7,7 +7,10 @@ provider_id=4c63e018-e6cf-45e0-a0d0-540e72d91f08
 timeout=10
 
 [localisation_api]
-endpoint=http://localisation:8501
+endpoint=https://localization:443
+mtls_cert=secrets/timeline.crt
+mtls_key=secrets/timeline.key
+mtls_ca=secrets/uzi-server-ca.crt
 provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 timeout=10
 
