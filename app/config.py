@@ -20,18 +20,8 @@ class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
 
 
-class ConfigPseudonymApi(BaseModel):
-    endpoint: str
-    provider_id: str
-    timeout: int = Field(default=30, gt=0)
-    mtls_cert: Optional[str] = None
-    mtls_key: Optional[str] = None
-    mtls_ca: Optional[str] = None
-
-
 class ConfigLocalisationApi(BaseModel):
     endpoint: str
-    provider_id: str
     timeout: int = Field(default=30, gt=0)
     mtls_cert: Optional[str] = None
     mtls_key: Optional[str] = None
@@ -40,7 +30,6 @@ class ConfigLocalisationApi(BaseModel):
 
 class ConfigAddressingApi(BaseModel):
     endpoint: str
-    provider_id: str
     timeout: int = Field(default=30, gt=0)
     mtls_cert: Optional[str] = None
     mtls_key: Optional[str] = None
@@ -49,7 +38,6 @@ class ConfigAddressingApi(BaseModel):
 
 class ConfigMetadataApi(BaseModel):
     endpoint: str
-    provider_id: str
     timeout: int = Field(default=30, gt=0)
     mtls_cert: Optional[str] = None
     mtls_key: Optional[str] = None
@@ -88,7 +76,6 @@ class ConfigTelemetry(BaseModel):
 class Config(BaseModel):
     app: ConfigApp
     uvicorn: ConfigUvicorn
-    pseudonym_api: ConfigPseudonymApi
     localisation_api: ConfigLocalisationApi
     addressing_api: ConfigAddressingApi
     metadata_api: ConfigMetadataApi

@@ -12,8 +12,6 @@ from app.api.addressing.api import AddressingApi, AddressingError
 from app.api.localisation.api import LocalisationApi, LocalisationError
 from app.api.localisation.models import LocalisationEntry
 from app.api.metadata.api import MetadataApi
-from app.api.pseudonym.api import PseudonymApi, PseudonymError
-from app.config import get_config
 from app.data import DataDomain, Pseudonym
 from app.telemetry import get_tracer
 
@@ -31,28 +29,16 @@ class TimelineService:
         localisation_api: LocalisationApi,
         addressing_api: AddressingApi,
         metadata_api: MetadataApi,
-        pseudonym_api: PseudonymApi,
     ) -> None:
         self.localisation_api = localisation_api
         self.addressing_api = addressing_api
         self.metadata_api = metadata_api
-        self.pseudonym_api = pseudonym_api
 
     def retrieve(self, pseudonym: Pseudonym, data_domain: DataDomain) -> Bundle:
-        # Exchange pseudonyms for localisation and addressing
-        config = get_config()
-
-        logger.info(f"Exchanging pseudonym {pseudonym} for localisation")
-        try:
-            localisation_pseudonym = self.pseudonym_api.exchange(pseudonym, config.localisation_api.provider_id)
-        except PseudonymError as e:
-            logger.error(f"Failed to exchange pseudonym: {e}")
-            raise TimelineError(f"Failed to exchange pseudonym: {e}")
-
         # Find providers in localisation service and iterate each one
-        logger.info(f"Fetching providers for localisation {localisation_pseudonym} and data domain {str(data_domain)}")
+        logger.info(f"Fetching providers for localisation {pseudonym} and data domain {str(data_domain)}")
         try:
-            providers = self.localisation_api.get_providers(localisation_pseudonym, data_domain)
+            providers = self.localisation_api.get_providers(pseudonym, data_domain)
         except LocalisationError as e:
             logger.error(f"Failed to fetch providers from localisation: {e}")
             providers = []
@@ -94,9 +80,8 @@ class TimelineService:
 
             # Fetch metadata at the found provider address
             try:
-                metadata_pseudonym = self.pseudonym_api.exchange(pseudonym, str(address.ura_number))
                 return self.metadata_api.search_metadata(
-                    metadata_pseudonym,
+                    pseudonym,
                     metadata_endpoint=address.metadata_endpoint,
                     data_domain=data_domain,
                 )

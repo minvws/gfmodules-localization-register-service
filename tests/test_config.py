@@ -1,4 +1,4 @@
-from app.config import Config, ConfigApp, LogLevel, ConfigUvicorn, ConfigTelemetry, ConfigPseudonymApi, \
+from app.config import Config, ConfigApp, LogLevel, ConfigUvicorn, ConfigTelemetry, \
     ConfigLocalisationApi, ConfigAddressingApi, ConfigMetadataApi, ConfigStats
 
 
@@ -7,24 +7,16 @@ def get_test_config() -> Config:
         app=ConfigApp(
             loglevel=LogLevel.error,
         ),
-        pseudonym_api=ConfigPseudonymApi(
-            endpoint="http://pseudonym-api",
-            provider_id="test",
-            timeout=30,
-        ),
         localisation_api=ConfigLocalisationApi(
             endpoint="http://localisation-api",
-            provider_id="test",
             timeout=30,
         ),
         addressing_api=ConfigAddressingApi(
             endpoint="http://addressing-api",
-            provider_id="test",
             timeout=30,
         ),
         metadata_api=ConfigMetadataApi(
             endpoint="http://metadata-api",
-            provider_id="test",
             timeout=30,
         ),
         uvicorn=ConfigUvicorn(
