@@ -16,7 +16,6 @@ def get_test_config() -> Config:
             timeout=30,
         ),
         metadata_api=ConfigMetadataApi(
-            endpoint="http://metadata-api",
             timeout=30,
         ),
         uvicorn=ConfigUvicorn(

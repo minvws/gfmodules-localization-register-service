@@ -37,7 +37,6 @@ class ConfigAddressingApi(BaseModel):
 
 
 class ConfigMetadataApi(BaseModel):
-    endpoint: str
     timeout: int = Field(default=30, gt=0)
     mtls_cert: Optional[str] = None
     mtls_key: Optional[str] = None
