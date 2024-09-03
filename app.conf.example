@@ -24,7 +24,6 @@ timeout=10
 # mtls_ca=secrets/ssl/addressing_api_ca.cert
 
 [metadata_api]
-endpoint=http://localhost:8504
 timeout=10
 # mtls_cert=secrets/ssl/metadata_api.cert
 # mtls_key=secrets/ssl/metadata_api.key

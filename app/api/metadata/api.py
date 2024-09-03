@@ -20,8 +20,7 @@ class MetadataApiException(Exception):
 
 
 class MetadataApi:
-    def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
-        self.endpoint = endpoint
+    def __init__(self, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
         self.timeout = timeout
         self.mtls_cert = mtls_cert
         self.mtls_key = mtls_key

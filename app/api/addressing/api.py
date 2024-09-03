@@ -14,18 +14,16 @@ class AddressingError(Exception):
 
 
 class AddressingApi:
-    def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str, metadata_endpoint: str):
+    def __init__(self, endpoint: str, timeout: int, mtls_cert: str, mtls_key: str, mtls_ca: str):
         self.endpoint = endpoint
         self.timeout = timeout
         self.mtls_cert = mtls_cert
         self.mtls_key = mtls_key
         self.mtls_ca = mtls_ca
-        self.metadata_endpoint = metadata_endpoint
 
     def get_addressing(self, ura_number: UraNumber, data_domain: DataDomain) -> Address | None:
         try:
             logger.info(f"Fetching addressing for ura number {str(ura_number)} / {str(data_domain)}")
-
             req = requests.post(
                 f"{self.endpoint}/metadata_endpoint",
                 json={

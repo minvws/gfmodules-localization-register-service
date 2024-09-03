@@ -26,13 +26,11 @@ def container_config(binder: inject.Binder) -> None:
         timeout=cfg.timeout,
         mtls_cert=cfg.mtls_cert if cfg.mtls_cert else "",
         mtls_key=cfg.mtls_key if cfg.mtls_key else "",
-        mtls_ca=cfg.mtls_ca if cfg.mtls_ca else "",
-        metadata_endpoint=config.metadata_api.endpoint
+        mtls_ca=cfg.mtls_ca if cfg.mtls_ca else ""
     )
 
     cfg = config.metadata_api  # type: ignore
     metadata_api = MetadataApi(
-        endpoint=cfg.endpoint,
         timeout=cfg.timeout,
         mtls_cert=cfg.mtls_cert if cfg.mtls_cert else "",
         mtls_key=cfg.mtls_key if cfg.mtls_key else "",
