@@ -4,6 +4,8 @@ set -e
 
 SECRETS_DIR=secrets
 
+mkdir -p $SECRETS_DIR
+
 echo "Downloading generated certs from secrets container"
 
 response=$(curl --write-out '%{http_code}' --output /dev/null http://secrets/README.md)
