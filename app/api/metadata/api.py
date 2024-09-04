@@ -67,7 +67,7 @@ class MetadataApi:
                             ref_id = "Patient/" + ref_id[9:]
                         if obj.subject.display is None:
                             # when the display is set, there is no need to fetch the resource itself for the timeline.
-                            patient = self.get_metadata_resource(pseudonym, metadata_endpoint, Patient, ref_id)
+                            patient = self.get_metadata_resource(metadata_endpoint, Patient, ref_id)
                             linked_resources[ref_id] = patient
 
                     for series_entry in obj.series:
@@ -96,7 +96,7 @@ class MetadataApi:
                                 if ref.actor.reference.startswith("urn:uuid:"):
                                     ref_id = "Practitioner/" + ref.actor.reference[9:]
                                 if ref_id not in resources:
-                                    practitioner = self.get_metadata_resource(pseudonym, metadata_endpoint, Practitioner, ref_id)
+                                    practitioner = self.get_metadata_resource(metadata_endpoint, Practitioner, ref_id)
                                     linked_resources[ref_id] = practitioner
 
                             # Add organization
@@ -105,7 +105,7 @@ class MetadataApi:
                                 if ref.actor.reference.startswith("urn:uuid:"):
                                     ref_id = "Organization/" + ref.actor.reference[9:]
                                 if ref_id not in resources:
-                                    organization = self.get_metadata_resource(pseudonym, metadata_endpoint, Organization, ref_id)
+                                    organization = self.get_metadata_resource(metadata_endpoint, Organization, ref_id)
                                     linked_resources[ref_id] = organization
 
         entries = []
@@ -125,14 +125,12 @@ class MetadataApi:
         )
 
     def get_metadata_resource(self,
-                              pseudonym: Pseudonym,
                               metadata_endpoint: str,
                               resource_cls: Type[Resource],
                               resource_id: str) -> Resource:
         try:
             req = requests.get(
                 f"{metadata_endpoint}/{resource_id}",
-                params={"pseudonym": str(pseudonym)},
                 timeout=self.timeout,
             )
         except (Exception, HTTPError) as e:
