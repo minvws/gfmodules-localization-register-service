@@ -13,7 +13,10 @@ mtls_ca=secrets/uzi-server-ca.crt
 timeout=10
 
 [addressing_api]
-endpoint=http://addressing:8502
+endpoint=https://addressing:443
+mtls_cert=secrets/timeline.crt
+mtls_key=secrets/timeline.key
+mtls_ca=secrets/uzi-server-ca.crt
 timeout=10
 
 [metadata_api]
