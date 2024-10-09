@@ -1,0 +1,10 @@
+@startuml
+!include <C4/C4_Container>
+
+Person(professional, "Healthcare Professional")
+System(healthcareSystem, "epd", "Or other healthcare systems")
+System(LocalizationRegisterService, "Localization Register Service", "Lokalizatie Register Service")
+
+Rel(professional, healthcareSystem, "Request timeline")
+
+@enduml
