@@ -1,5 +1,5 @@
 
-# Interface Specifications National Referral Index
+# Interface Specifications Localization Register Service
 
 ## Disclaimer
 
@@ -16,7 +16,8 @@ Ministry of Health, Welfare and Sport of the Dutch government.
 ## Summary
 
 This interface enables healthcare providers to fetch patient's medical timeline. The timeline in this context is a representation of patient's medical history.
-**insert image here**
+
+![request-timeline](../images/structurizr-RequestTimelineProcess.svg)
 
 ## Process
 
@@ -34,11 +35,11 @@ The interface provides the following endpoint:
 
 The timeline endpoint gets information about about patient medical history by using two parameters, pseudonym and data_domain. The response is an [FHIR R4 Bundle](https://www.hl7.org/fhir/r4/bundle.html) of type `searchset`.
 
-|  |  |
-|---|---|
-| Path | /info |
-| Type | POST |
-| Query Parameters | None |
+|  |                                                     |
+|---|-----------------------------------------------------|
+| Path | /timeline                                           |
+| Type | POST                                                |
+| Query Parameters | None                                                |
 | JSON payload | [Pseudonym](#pseudonym), [DataDomain](#data-domain) |
 
 ```curl
@@ -144,13 +145,25 @@ example response:
                         },
                       "number":0,
                       "title":"Soms huis geur."
+   }
+                                    ]
+                                }
+                            ]
+                        }
                     }
-                  ]
-                }
-          }
-        ]
-      }
-    }
-  ]
+                ]
+            }
+        }
+    ]
 }
 ```
+
+#### Pseudonym
+
+A pseudonym send as a query parameter or as a json property is always serialized as a string
+
+TODO: Update pseudonym to RID when PRS implementation is finished
+
+#### Data Domain
+
+Currently the only supported data domain is `beeldbank`. More will be added in the future.

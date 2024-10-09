@@ -32,7 +32,6 @@ def post_timeline(
     req: TimelineRequest,
     timeline_service: TimelineService = Depends(container.get_timeline_service),
 ) -> Any:
-    print(req)
     span = trace.get_current_span()
     span.update_name(
         f"POST /timeline pseudonym={req.pseudonym} data_domain={req.data_domain}"
