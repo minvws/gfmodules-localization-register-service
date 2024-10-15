@@ -17,6 +17,14 @@ class DataDomain(Enum):
         except ValueError:
             return None
 
+    @classmethod
+    def from_fhir(cls, label: str) -> Optional['DataDomain']:
+        if label == 'ImagingStudy':
+            return DataDomain.BeeldBank
+        if label == 'MedicationRequest':
+            return DataDomain.Medicatie
+        return None
+
     def to_fhir(self) -> str:
         if self == DataDomain.BeeldBank:
             return 'ImagingStudy'
