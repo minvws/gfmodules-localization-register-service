@@ -33,24 +33,18 @@ The interface provides the following endpoint:
 
 ## timeline
 
-The timeline endpoint gets information about about patient medical history by using two parameters, pseudonym and data_domain. The response is an [FHIR R4 Bundle](https://www.hl7.org/fhir/r4/bundle.html) of type `searchset`.
+The timeline endpoint gets information about about patient medical history by using two parameters, fhir type and pseudonym. The response is an [FHIR R4 Bundle](https://www.hl7.org/fhir/r4/bundle.html) of type `searchset`. At this point only the fhir type `ImagingStudy` is supported.
 
 |  |                                                     |
 |---|-----------------------------------------------------|
-| Path | /timeline                                           |
+| Path | /fhir/ImagingStudy/_search                                       |
 | Type | POST                                                |
-| Query Parameters | None                                                |
-| JSON payload | [Pseudonym](#pseudonym), [DataDomain](#data-domain) |
+| Query Parameters | [Pseudonym](#pseudonym)                                               |
 
 ```curl
 curl -X 'POST' \
-  'http{s}://server/timeline' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "pseudonym": "<<pseudonym>>",
-  "data_domain": "<<data_domain>"
-}'
+  'http{s}://server/fhir/ImagingStudy/_search?pseudonym=<<pseudonym>>' \
+  -H 'accept: application/json' 
 ```
 
 example response:
